@@ -147,46 +147,36 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      minHeight: '100%', padding: '4px 0 0', background: colors.bg,
+      height: '100%', background: colors.bg,
     }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', maxWidth: 600, padding: '0 8px',
-      }}>
-        <h1 style={{
-          fontSize: 'clamp(14px, 4.5vw, 24px)',
-          textTransform: 'uppercase',
-          color: colors.gold,
-          textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
-          lineHeight: 1.2,
-        }}>
-          OPEN THE FUCKIN&apos; STRAIT
-        </h1>
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: 'transparent', border: 'none',
-            fontSize: 20, cursor: 'pointer', padding: 2,
-          }}
-          title={theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}
-        >
-          {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
-        </button>
-      </div>
-
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', width: '100%',
-        maxWidth: 600, padding: '2px 8px 4px', fontSize: 'clamp(11px, 3vw, 16px)',
-        color: colors.text,
-      }}>
-        <span>BARRELS: {score}</span>
-        <span>BEST: {highScore}</span>
-      </div>
-
       <div ref={gameContainerRef} style={{
         position: 'relative', width: '100%', maxWidth: 600,
         touchAction: 'none',
       }}>
+        {/* Score bar overlaid on top of the board */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 5,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '6px 10px',
+          fontSize: 'clamp(11px, 3vw, 15px)',
+          color: colors.gold,
+          fontWeight: 'bold',
+          pointerEvents: 'none',
+        }}>
+          <span>BARRELS: {score}</span>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'transparent', border: 'none',
+              fontSize: 18, cursor: 'pointer', padding: 0,
+              pointerEvents: 'auto',
+            }}
+          >
+            {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
+          </button>
+          <span>BEST: {highScore}</span>
+        </div>
+
         <svg
           viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`}
           style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -200,6 +190,21 @@ export default function App() {
 
         {gameState === 'idle' && (
           <Overlay colors={colors}>
+            <h1 style={{
+              fontSize: 'clamp(18px, 6vw, 32px)',
+              textTransform: 'uppercase',
+              color: colors.gold,
+              textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
+              textAlign: 'center',
+              lineHeight: 1.3,
+              marginBottom: 16,
+              padding: '0 16px',
+            }}>
+              OPEN THE FUCKIN&apos; STRAIT
+            </h1>
+            <div style={{ fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.5, marginBottom: 20 }}>
+              Swipe to steer
+            </div>
             <button
               style={bigBtnStyle}
               onClick={startGame}
@@ -212,6 +217,16 @@ export default function App() {
 
         {gameState === 'gameover' && (
           <Overlay colors={colors}>
+            <h1 style={{
+              fontSize: 'clamp(16px, 5vw, 28px)',
+              textTransform: 'uppercase',
+              color: colors.gold,
+              textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
+              textAlign: 'center',
+              marginBottom: 12,
+            }}>
+              OPEN THE FUCKIN&apos; STRAIT
+            </h1>
             <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 8, color: colors.text }}>GAME OVER</div>
             <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 20, color: colors.text }}>
               BARRELS GOBBLED: {score}
@@ -226,12 +241,6 @@ export default function App() {
           </Overlay>
         )}
       </div>
-
-      {gameState === 'idle' && (
-        <div style={{ marginTop: 8, fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.4, textAlign: 'center' }}>
-          Swipe to steer
-        </div>
-      )}
     </div>
   );
 }
