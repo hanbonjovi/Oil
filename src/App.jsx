@@ -65,14 +65,15 @@ function OilDrop({ x, y }) {
   const cy = y * CELL_SIZE + CELL_SIZE / 2;
 
   return (
-    <g transform={`translate(${cx}, ${cy}) scale(1.8)`}>
+    <g transform={`translate(${cx}, ${cy}) scale(2.5)`}>
       <path
         d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
-        fill="#111"
-        stroke="#333"
-        strokeWidth={0.5}
+        fill="#1a1a1a"
+        stroke="#e0c050"
+        strokeWidth={1}
       />
-      <ellipse cx={-1.5} cy={1} rx={1.2} ry={2} fill="#222" opacity={0.6} />
+      <ellipse cx={-1.5} cy={0} rx={1.2} ry={2.5} fill="#e0c050" opacity={0.4} />
+      <ellipse cx={1} cy={-2} rx={0.8} ry={1.2} fill="#e0c050" opacity={0.25} />
     </g>
   );
 }
