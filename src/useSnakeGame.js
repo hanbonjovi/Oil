@@ -15,10 +15,10 @@ function placeFood(snake) {
 }
 
 export default function useSnakeGame() {
-  const snakeRef = useRef([{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }]);
+  const snakeRef = useRef([{ x: 4, y: 6 }, { x: 3, y: 6 }, { x: 2, y: 6 }]);
   const dirRef = useRef(DIRECTIONS.RIGHT);
   const nextDirRef = useRef(null);
-  const foodRef = useRef({ x: 10, y: 7 });
+  const foodRef = useRef({ x: 8, y: 6 });
   const intervalRef = useRef(null);
   const tickMsRef = useRef(START_TICK);
 
@@ -101,7 +101,7 @@ export default function useSnakeGame() {
   tickRef.current = tick;
 
   const startGame = useCallback(() => {
-    snakeRef.current = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }];
+    snakeRef.current = [{ x: 4, y: 6 }, { x: 3, y: 6 }, { x: 2, y: 6 }];
     dirRef.current = DIRECTIONS.RIGHT;
     nextDirRef.current = null;
     scoreRef.current = 0;

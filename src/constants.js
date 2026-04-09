@@ -1,5 +1,5 @@
-export const GRID_SIZE = 15;
-export const CELL_SIZE = 40;
+export const GRID_SIZE = 12;
+export const CELL_SIZE = 50;
 export const BOARD_PX = GRID_SIZE * CELL_SIZE; // 600
 export const TICK_MS = 120;
 

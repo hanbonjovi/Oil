@@ -147,21 +147,18 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      minHeight: '100%', padding: '8px 8px 16px', background: colors.bg,
+      minHeight: '100%', padding: '4px 0 0', background: colors.bg,
     }}>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: '100%', maxWidth: 600, position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', maxWidth: 600, padding: '0 8px',
       }}>
         <h1 style={{
-          textAlign: 'center',
-          fontSize: 'clamp(16px, 5vw, 28px)',
+          fontSize: 'clamp(14px, 4.5vw, 24px)',
           textTransform: 'uppercase',
           color: colors.gold,
           textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
-          padding: '8px 8px 4px',
           lineHeight: 1.2,
-          flex: 1,
         }}>
           OPEN THE FUCKIN&apos; STRAIT
         </h1>
@@ -169,8 +166,7 @@ export default function App() {
           onClick={toggleTheme}
           style={{
             background: 'transparent', border: 'none',
-            fontSize: 24, cursor: 'pointer', padding: 4,
-            position: 'absolute', right: 0, top: 4,
+            fontSize: 20, cursor: 'pointer', padding: 2,
           }}
           title={theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}
         >
@@ -180,7 +176,7 @@ export default function App() {
 
       <div style={{
         display: 'flex', justifyContent: 'space-between', width: '100%',
-        maxWidth: 600, padding: '4px 0 8px', fontSize: 'clamp(12px, 3.5vw, 18px)',
+        maxWidth: 600, padding: '2px 8px 4px', fontSize: 'clamp(11px, 3vw, 16px)',
         color: colors.text,
       }}>
         <span>BARRELS: {score}</span>
@@ -231,8 +227,8 @@ export default function App() {
         )}
       </div>
 
-      {gameState === 'playing' && (
-        <div style={{ marginTop: 12, fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.5, textAlign: 'center' }}>
+      {gameState === 'idle' && (
+        <div style={{ marginTop: 8, fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.4, textAlign: 'center' }}>
           Swipe to steer
         </div>
       )}
