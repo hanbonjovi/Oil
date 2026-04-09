@@ -1,5 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { GRID_SIZE, TICK_MS, DIRECTIONS, HIGH_SCORE_KEY } from './constants';
+import { GRID_SIZE, DIRECTIONS, HIGH_SCORE_KEY } from './constants';
+
+const START_TICK = 180; // 50% slower than the old 120ms
+const MIN_TICK = 80;    // fastest speed
+const SPEED_STEP = 5;   // ms faster per barrel eaten
 
 function placeFood(snake) {
   let x, y;
@@ -16,6 +20,7 @@ export default function useSnakeGame() {
   const nextDirRef = useRef(null);
   const foodRef = useRef({ x: 10, y: 7 });
   const intervalRef = useRef(null);
+  const tickMsRef = useRef(START_TICK);
 
   const [, setRenderTick] = useState(0);
   const [score, setScore] = useState(0);
@@ -29,6 +34,7 @@ export default function useSnakeGame() {
   const [gameState, setGameState] = useState('idle');
 
   const scoreRef = useRef(0);
+  const tickRef = useRef(null);
 
   const gameOver = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -42,6 +48,11 @@ export default function useSnakeGame() {
       return best;
     });
     setGameState('gameover');
+  }, []);
+
+  const restartInterval = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => tickRef.current(), tickMsRef.current);
   }, []);
 
   const tick = useCallback(() => {
@@ -71,26 +82,37 @@ export default function useSnakeGame() {
       scoreRef.current += 1;
       setScore(scoreRef.current);
       foodRef.current = placeFood(newSnake);
+
+      // Speed up
+      const newTickMs = Math.max(MIN_TICK, tickMsRef.current - SPEED_STEP);
+      if (newTickMs !== tickMsRef.current) {
+        tickMsRef.current = newTickMs;
+        restartInterval();
+      }
     } else {
       newSnake.pop();
     }
 
     snakeRef.current = newSnake;
     setRenderTick((t) => t + 1);
-  }, [gameOver]);
+  }, [gameOver, restartInterval]);
+
+  // Keep tickRef in sync so the interval always calls the latest tick
+  tickRef.current = tick;
 
   const startGame = useCallback(() => {
     snakeRef.current = [{ x: 4, y: 7 }, { x: 3, y: 7 }, { x: 2, y: 7 }];
     dirRef.current = DIRECTIONS.RIGHT;
     nextDirRef.current = null;
     scoreRef.current = 0;
+    tickMsRef.current = START_TICK;
     setScore(0);
     foodRef.current = placeFood(snakeRef.current);
     setGameState('playing');
 
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(tick, TICK_MS);
-  }, [tick]);
+    intervalRef.current = setInterval(() => tickRef.current(), START_TICK);
+  }, []);
 
   const changeDirection = useCallback((dirName) => {
     const newDir = DIRECTIONS[dirName];

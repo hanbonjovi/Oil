@@ -1,7 +1,6 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import useSnakeGame from './useSnakeGame';
 import useInputControls from './useInputControls';
-import DPad from './DPad';
 import { GRID_SIZE, CELL_SIZE, BOARD_PX, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
@@ -232,7 +231,11 @@ export default function App() {
         )}
       </div>
 
-      {gameState === 'playing' && <DPad onDirection={changeDirection} colors={colors} />}
+      {gameState === 'playing' && (
+        <div style={{ marginTop: 12, fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.5, textAlign: 'center' }}>
+          Swipe to steer
+        </div>
+      )}
     </div>
   );
 }
