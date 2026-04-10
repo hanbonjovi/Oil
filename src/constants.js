@@ -1,7 +1,8 @@
-export const GRID_SIZE = 12;
+export const GRID_COLS = 12;
+export const GRID_ROWS = 20;
 export const CELL_SIZE = 50;
-export const BOARD_PX = GRID_SIZE * CELL_SIZE; // 600
-export const TICK_MS = 120;
+export const BOARD_W = GRID_COLS * CELL_SIZE; // 600
+export const BOARD_H = GRID_ROWS * CELL_SIZE; // 1000
 
 export const THEMES = {
   dark: {

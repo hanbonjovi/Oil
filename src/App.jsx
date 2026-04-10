@@ -1,7 +1,7 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import useSnakeGame from './useSnakeGame';
 import useInputControls from './useInputControls';
-import { GRID_SIZE, CELL_SIZE, BOARD_PX, THEMES } from './constants';
+import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
 
@@ -129,10 +129,13 @@ export default function App() {
 
   const gridLines = useMemo(() => {
     const lines = [];
-    for (let i = 0; i <= GRID_SIZE; i++) {
+    for (let i = 0; i <= GRID_COLS; i++) {
       const pos = i * CELL_SIZE;
-      lines.push(<line key={`h${i}`} x1={0} y1={pos} x2={BOARD_PX} y2={pos} stroke={colors.gridLine} strokeWidth={0.5} />);
-      lines.push(<line key={`v${i}`} x1={pos} y1={0} x2={pos} y2={BOARD_PX} stroke={colors.gridLine} strokeWidth={0.5} />);
+      lines.push(<line key={`v${i}`} x1={pos} y1={0} x2={pos} y2={BOARD_H} stroke={colors.gridLine} strokeWidth={0.5} />);
+    }
+    for (let i = 0; i <= GRID_ROWS; i++) {
+      const pos = i * CELL_SIZE;
+      lines.push(<line key={`h${i}`} x1={0} y1={pos} x2={BOARD_W} y2={pos} stroke={colors.gridLine} strokeWidth={0.5} />);
     }
     return lines;
   }, [colors.gridLine]);
@@ -178,10 +181,10 @@ export default function App() {
         </div>
 
         <svg
-          viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`}
+          viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
           style={{ width: '100%', height: 'auto', display: 'block' }}
         >
-          <rect width={BOARD_PX} height={BOARD_PX} fill={colors.board} />
+          <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
           {bodySegments}

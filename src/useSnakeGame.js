@@ -1,24 +1,26 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { GRID_SIZE, DIRECTIONS, HIGH_SCORE_KEY } from './constants';
+import { GRID_COLS, GRID_ROWS, DIRECTIONS, HIGH_SCORE_KEY } from './constants';
 
-const START_TICK = 180; // 50% slower than the old 120ms
-const MIN_TICK = 80;    // fastest speed
-const SPEED_STEP = 5;   // ms faster per barrel eaten
+const START_TICK = 180;
+const MIN_TICK = 80;
+const SPEED_STEP = 5;
 
 function placeFood(snake) {
   let x, y;
   do {
-    x = Math.floor(Math.random() * GRID_SIZE);
-    y = Math.floor(Math.random() * GRID_SIZE);
+    x = Math.floor(Math.random() * GRID_COLS);
+    y = Math.floor(Math.random() * GRID_ROWS);
   } while (snake.some((s) => s.x === x && s.y === y));
   return { x, y };
 }
 
+const START_Y = Math.floor(GRID_ROWS / 2);
+
 export default function useSnakeGame() {
-  const snakeRef = useRef([{ x: 4, y: 6 }, { x: 3, y: 6 }, { x: 2, y: 6 }]);
+  const snakeRef = useRef([{ x: 4, y: START_Y }, { x: 3, y: START_Y }, { x: 2, y: START_Y }]);
   const dirRef = useRef(DIRECTIONS.RIGHT);
   const nextDirRef = useRef(null);
-  const foodRef = useRef({ x: 8, y: 6 });
+  const foodRef = useRef({ x: 8, y: START_Y });
   const intervalRef = useRef(null);
   const tickMsRef = useRef(START_TICK);
 
@@ -65,7 +67,7 @@ export default function useSnakeGame() {
     const dir = dirRef.current;
     const newHead = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+    if (newHead.x < 0 || newHead.x >= GRID_COLS || newHead.y < 0 || newHead.y >= GRID_ROWS) {
       gameOver();
       return;
     }
@@ -83,7 +85,6 @@ export default function useSnakeGame() {
       setScore(scoreRef.current);
       foodRef.current = placeFood(newSnake);
 
-      // Speed up
       const newTickMs = Math.max(MIN_TICK, tickMsRef.current - SPEED_STEP);
       if (newTickMs !== tickMsRef.current) {
         tickMsRef.current = newTickMs;
@@ -97,11 +98,10 @@ export default function useSnakeGame() {
     setRenderTick((t) => t + 1);
   }, [gameOver, restartInterval]);
 
-  // Keep tickRef in sync so the interval always calls the latest tick
   tickRef.current = tick;
 
   const startGame = useCallback(() => {
-    snakeRef.current = [{ x: 4, y: 6 }, { x: 3, y: 6 }, { x: 2, y: 6 }];
+    snakeRef.current = [{ x: 4, y: START_Y }, { x: 3, y: START_Y }, { x: 2, y: START_Y }];
     dirRef.current = DIRECTIONS.RIGHT;
     nextDirRef.current = null;
     scoreRef.current = 0;
