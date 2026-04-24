@@ -1,8 +1,11 @@
 export const GRID_COLS = 12;
 export const GRID_ROWS = 20;
 export const CELL_SIZE = 50;
+export const BORDER = 24;
 export const BOARD_W = GRID_COLS * CELL_SIZE; // 600
 export const BOARD_H = GRID_ROWS * CELL_SIZE; // 1000
+export const SVG_W = BOARD_W + BORDER * 2;
+export const SVG_H = BOARD_H + BORDER * 2;
 
 export const THEMES = {
   dark: {

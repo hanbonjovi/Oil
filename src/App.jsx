@@ -1,7 +1,7 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import useSnakeGame from './useSnakeGame';
 import useInputControls from './useInputControls';
-import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, THEMES } from './constants';
+import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, BORDER, SVG_W, SVG_H, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
 const LEADERS_KEY = 'strait-leaderboard';
@@ -256,7 +256,6 @@ export default function App() {
           padding: '10px 14px', fontSize: 'clamp(14px, 4vw, 18px)',
           color: '#3a2200', fontWeight: 'bold',
           background: colors.border,
-          borderLeft: `12px solid ${colors.border}`, borderRight: `12px solid ${colors.border}`,
         }}>
           <span>BARRELS: {score}</span>
           <button onClick={toggleTheme} style={{
@@ -272,12 +271,15 @@ export default function App() {
         position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
         flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
       }}>
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', flex: 1, minHeight: 0, display: 'block', border: `12px solid ${colors.border}`, boxSizing: 'border-box' }}>
-          <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
-          {gridLines}
-          <OilDrop x={food.x} y={food.y} colors={colors} />
-          {bodySegments}
-          {snake.length > 0 && <SnakeHead x={snake[0].x} y={snake[0].y} colors={colors} />}
+        <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', flex: 1, minHeight: 0, display: 'block' }}>
+          <rect width={SVG_W} height={SVG_H} fill={colors.border} />
+          <rect x={BORDER} y={BORDER} width={BOARD_W} height={BOARD_H} fill={colors.board} />
+          <g transform={`translate(${BORDER},${BORDER})`}>
+            {gridLines}
+            <OilDrop x={food.x} y={food.y} colors={colors} />
+            {bodySegments}
+            {snake.length > 0 && <SnakeHead x={snake[0].x} y={snake[0].y} colors={colors} />}
+          </g>
         </svg>
 
         {gameState === 'idle' && (
