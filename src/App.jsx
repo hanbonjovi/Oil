@@ -209,9 +209,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    document.body.style.background = colors.bg;
-    document.documentElement.style.background = colors.bg;
-  }, [colors.bg]);
+    document.body.style.background = colors.border;
+    document.documentElement.style.background = colors.border;
+  }, [colors.border]);
 
   const bigBtnStyle = {
     padding: '14px 36px', fontSize: 22, fontWeight: 'bold',
@@ -248,7 +248,7 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      height: '100%', background: colors.bg,
+      height: '100%', background: colors.border,
     }}>
       <div ref={gameContainerRef} style={{
         position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
@@ -269,7 +269,7 @@ export default function App() {
           <span>BEST: {highScore}</span>
         </div>
 
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `25px solid ${colors.border}` }}>
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `12px solid ${colors.border}` }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
