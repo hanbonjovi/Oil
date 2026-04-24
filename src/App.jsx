@@ -274,44 +274,51 @@ export default function App() {
 
         {gameState === 'gameover' && (
           <Overlay colors={colors}>
-            <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
-              GAME OVER
-            </div>
-            <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 16, color: colors.text }}>
-              BARRELS GOBBLED: {score}
-            </div>
-
             {needsName ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{ fontSize: 'clamp(12px, 3.5vw, 16px)', color: colors.gold }}>
-                  NEW TOP SCORE!
+              <>
+                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
+                  GAME OVER
                 </div>
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  maxLength={12}
-                  placeholder="Enter name"
-                  value={nameEntry}
-                  onChange={(e) => setNameEntry(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') submitName(); }}
-                  style={{
-                    background: 'transparent', border: `2px solid ${colors.gold}`,
-                    color: colors.text, padding: '8px 12px', fontSize: 18,
-                    fontFamily: "'Courier New', monospace", textAlign: 'center',
-                    borderRadius: 4, outline: 'none', width: 200,
-                  }}
-                />
-                <button style={{ ...bigBtnStyle, padding: '10px 28px', fontSize: 18 }} onClick={submitName}>
-                  SAVE
-                </button>
-              </div>
+                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 12, color: colors.text }}>
+                  BARRELS GOBBLED: {score}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <div style={{ fontSize: 'clamp(12px, 3.5vw, 16px)', color: colors.gold }}>
+                    NEW TOP SCORE!
+                  </div>
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    maxLength={12}
+                    placeholder="Enter name"
+                    value={nameEntry}
+                    onChange={(e) => setNameEntry(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') submitName(); }}
+                    style={{
+                      background: 'transparent', border: `2px solid ${colors.gold}`,
+                      color: colors.text, padding: '8px 12px', fontSize: 18,
+                      fontFamily: "'Courier New', monospace", textAlign: 'center',
+                      borderRadius: 4, outline: 'none', width: 200,
+                    }}
+                  />
+                  <button style={{ ...bigBtnStyle, padding: '10px 28px', fontSize: 18 }} onClick={submitName}>
+                    SAVE
+                  </button>
+                </div>
+              </>
             ) : (
               <>
-                <button style={bigBtnStyle} onClick={handleStart}
+                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
+                  GAME OVER
+                </div>
+                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 12, color: colors.text }}>
+                  BARRELS GOBBLED: {score}
+                </div>
+                <Leaderboard board={leaderboard} colors={colors} highlight={highlightIdx} />
+                <button style={{ ...bigBtnStyle, marginTop: 16 }} onClick={handleStart}
                   onTouchEnd={(e) => { e.preventDefault(); handleStart(); }}>
                   PLAY AGAIN
                 </button>
-                <Leaderboard board={leaderboard} colors={colors} highlight={highlightIdx} />
               </>
             )}
           </Overlay>
