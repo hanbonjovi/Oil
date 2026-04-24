@@ -269,7 +269,7 @@ export default function App() {
           <span>BEST: {highScore}</span>
         </div>
 
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `1px solid ${colors.border}` }}>
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `25px solid ${colors.border}` }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
