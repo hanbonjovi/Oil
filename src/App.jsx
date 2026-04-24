@@ -4,6 +4,33 @@ import useInputControls from './useInputControls';
 import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
+const MAX_LEADERS = 10;
+
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch('/api/leaderboard');
+    if (res.ok) return await res.json();
+  } catch {}
+  return [];
+}
+
+async function postScore(name, score) {
+  try {
+    const res = await fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.slice(0, 12), score }),
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
+}
+
+function isTopScore(score, board) {
+  if (score <= 0) return false;
+  if (board.length < MAX_LEADERS) return true;
+  return score > board[board.length - 1].score;
+}
 
 function lerpColor(a, b, t) {
   const parse = (hex) => {
@@ -19,7 +46,6 @@ function SnakeHead({ x, y, colors }) {
   const cx = x * CELL_SIZE + CELL_SIZE / 2;
   const cy = y * CELL_SIZE + CELL_SIZE / 2;
   const r = CELL_SIZE / 2 - 1;
-
   return (
     <g>
       <defs>
@@ -28,15 +54,8 @@ function SnakeHead({ x, y, colors }) {
         </clipPath>
       </defs>
       <circle cx={cx} cy={cy} r={r + 1} fill="none" stroke={colors.gold} strokeWidth={2} />
-      <image
-        href="/trump-head.png"
-        x={cx - r}
-        y={cy - r}
-        width={r * 2}
-        height={r * 2}
-        clipPath="url(#head-clip)"
-        preserveAspectRatio="xMidYMid slice"
-      />
+      <image href="/trump-head.png" x={cx - r} y={cy - r} width={r * 2} height={r * 2}
+        clipPath="url(#head-clip)" preserveAspectRatio="xMidYMid slice" />
     </g>
   );
 }
@@ -48,31 +67,18 @@ function BodySegment({ seg, index, total, colors }) {
   const size = CELL_SIZE * taper;
   const t = index / Math.max(total - 1, 1);
   const color = lerpColor(colors.bodyStart, colors.bodyEnd, t);
-
   return (
-    <rect
-      x={cx - size / 2}
-      y={cy - size / 2}
-      width={size}
-      height={size}
-      rx={size * 0.25}
-      fill={color}
-    />
+    <rect x={cx - size / 2} y={cy - size / 2} width={size} height={size} rx={size * 0.25} fill={color} />
   );
 }
 
 function OilDrop({ x, y, colors }) {
   const cx = x * CELL_SIZE + CELL_SIZE / 2;
   const cy = y * CELL_SIZE + CELL_SIZE / 2;
-
   return (
     <g transform={`translate(${cx}, ${cy}) scale(2.5)`}>
-      <path
-        d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
-        fill={colors.oilFill}
-        stroke={colors.oilStroke}
-        strokeWidth={1}
-      />
+      <path d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
+        fill={colors.oilFill} stroke={colors.oilStroke} strokeWidth={1} />
       <ellipse cx={-1.5} cy={0} rx={1.2} ry={2.5} fill={colors.oilHighlight} opacity={0.4} />
       <ellipse cx={1} cy={-2} rx={0.8} ry={1.2} fill={colors.oilHighlight} opacity={0.25} />
     </g>
@@ -82,13 +88,39 @@ function OilDrop({ x, y, colors }) {
 function Overlay({ children, colors }) {
   return (
     <div style={{
-      position: 'absolute', inset: 0,
-      background: colors.overlay,
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      zIndex: 10,
+      position: 'absolute', inset: 0, background: colors.overlay,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      zIndex: 10, overflowY: 'auto',
     }}>
       {children}
+    </div>
+  );
+}
+
+function Leaderboard({ board, colors, highlight }) {
+  if (board.length === 0) return null;
+  return (
+    <div style={{ width: '80%', maxWidth: 300, marginTop: 16 }}>
+      <div style={{ fontSize: 'clamp(12px, 3.5vw, 16px)', color: colors.gold, marginBottom: 8, textAlign: 'center', fontWeight: 'bold' }}>
+        TOP BARRELS
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(10px, 2.8vw, 14px)' }}>
+        <tbody>
+          {board.map((entry, i) => {
+            const isHighlighted = highlight != null && i === highlight;
+            return (
+              <tr key={i} style={{
+                color: isHighlighted ? colors.gold : colors.text,
+                fontWeight: isHighlighted ? 'bold' : 'normal',
+              }}>
+                <td style={{ padding: '3px 6px', textAlign: 'right', width: 24, opacity: 0.6 }}>{i + 1}.</td>
+                <td style={{ padding: '3px 6px' }}>{entry.name}</td>
+                <td style={{ padding: '3px 6px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{entry.score}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -96,12 +128,54 @@ function Overlay({ children, colors }) {
 export default function App() {
   const { snake, food, score, highScore, gameState, startGame, changeDirection } = useSnakeGame();
   const gameContainerRef = useRef(null);
+  const nameInputRef = useRef(null);
   useInputControls(changeDirection, gameContainerRef);
 
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch { return 'dark'; }
   });
   const colors = THEMES[theme];
+
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [nameEntry, setNameEntry] = useState('');
+  const [needsName, setNeedsName] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(null);
+
+  // Load leaderboard on mount
+  useEffect(() => {
+    fetchLeaderboard().then(setLeaderboard);
+  }, []);
+
+  // When game ends, check if score qualifies
+  const prevGameState = useRef(gameState);
+  useEffect(() => {
+    if (prevGameState.current === 'playing' && gameState === 'gameover') {
+      fetchLeaderboard().then((board) => {
+        setLeaderboard(board);
+        if (isTopScore(score, board)) {
+          setNeedsName(true);
+          setNameEntry('');
+          setHighlightIdx(null);
+          setTimeout(() => nameInputRef.current?.focus(), 100);
+        } else {
+          setNeedsName(false);
+          setHighlightIdx(null);
+        }
+      });
+    }
+    prevGameState.current = gameState;
+  }, [gameState, score]);
+
+  const submitName = async () => {
+    const name = nameEntry.trim() || 'ANON';
+    const updated = await postScore(name, score);
+    if (updated) {
+      const idx = updated.findIndex((e) => e.name === name.slice(0, 12) && e.score === score);
+      setLeaderboard(updated);
+      setHighlightIdx(idx >= 0 ? idx : null);
+    }
+    setNeedsName(false);
+  };
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -115,16 +189,10 @@ export default function App() {
   }, [colors.bg]);
 
   const bigBtnStyle = {
-    padding: '14px 36px',
-    fontSize: 22,
-    fontWeight: 'bold',
-    background: 'transparent',
-    border: `2px solid ${colors.gold}`,
-    color: colors.text,
-    cursor: 'pointer',
-    borderRadius: 6,
-    touchAction: 'none',
-    fontFamily: "'Courier New', monospace",
+    padding: '14px 36px', fontSize: 22, fontWeight: 'bold',
+    background: 'transparent', border: `2px solid ${colors.gold}`,
+    color: colors.text, cursor: 'pointer', borderRadius: 6,
+    touchAction: 'none', fontFamily: "'Courier New', monospace",
   };
 
   const gridLines = useMemo(() => {
@@ -147,43 +215,36 @@ export default function App() {
     );
   }
 
+  const handleStart = () => {
+    setHighlightIdx(null);
+    startGame();
+  };
+
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       height: '100%', background: colors.bg,
     }}>
       <div ref={gameContainerRef} style={{
-        position: 'relative', width: '100%', maxWidth: 600,
-        touchAction: 'none',
+        position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
       }}>
-        {/* Score bar overlaid on top of the board */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 5,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '6px 10px',
-          fontSize: 'clamp(11px, 3vw, 15px)',
-          color: colors.gold,
-          fontWeight: 'bold',
-          pointerEvents: 'none',
+          padding: '6px 10px', fontSize: 'clamp(11px, 3vw, 15px)',
+          color: colors.gold, fontWeight: 'bold', pointerEvents: 'none',
         }}>
           <span>BARRELS: {score}</span>
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'transparent', border: 'none',
-              fontSize: 18, cursor: 'pointer', padding: 0,
-              pointerEvents: 'auto',
-            }}
-          >
-            {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
+          <button onClick={toggleTheme} style={{
+            background: 'transparent', border: 'none', fontSize: 18,
+            cursor: 'pointer', padding: 0, pointerEvents: 'auto',
+          }}>
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <span>BEST: {highScore}</span>
         </div>
 
-        <svg
-          viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
-          style={{ width: '100%', height: 'auto', display: 'block' }}
-        >
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
@@ -194,53 +255,65 @@ export default function App() {
         {gameState === 'idle' && (
           <Overlay colors={colors}>
             <h1 style={{
-              fontSize: 'clamp(18px, 6vw, 32px)',
-              textTransform: 'uppercase',
-              color: colors.gold,
-              textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
-              textAlign: 'center',
-              lineHeight: 1.3,
-              marginBottom: 16,
-              padding: '0 16px',
+              fontSize: 'clamp(18px, 6vw, 32px)', textTransform: 'uppercase',
+              color: colors.gold, textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
+              textAlign: 'center', lineHeight: 1.3, marginBottom: 12, padding: '0 16px',
             }}>
               OPEN THE FUCKIN&apos; STRAIT
             </h1>
-            <div style={{ fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.5, marginBottom: 20 }}>
+            <div style={{ fontSize: 'clamp(11px, 3vw, 14px)', color: colors.text, opacity: 0.5, marginBottom: 16 }}>
               Swipe to steer
             </div>
-            <button
-              style={bigBtnStyle}
-              onClick={startGame}
-              onTouchEnd={(e) => { e.preventDefault(); startGame(); }}
-            >
+            <button style={bigBtnStyle} onClick={handleStart}
+              onTouchEnd={(e) => { e.preventDefault(); handleStart(); }}>
               START
             </button>
+            <Leaderboard board={leaderboard} colors={colors} highlight={highlightIdx} />
           </Overlay>
         )}
 
         {gameState === 'gameover' && (
           <Overlay colors={colors}>
-            <h1 style={{
-              fontSize: 'clamp(16px, 5vw, 28px)',
-              textTransform: 'uppercase',
-              color: colors.gold,
-              textShadow: `0 0 10px ${colors.gold}, 0 0 20px ${colors.gold}80`,
-              textAlign: 'center',
-              marginBottom: 12,
-            }}>
-              OPEN THE FUCKIN&apos; STRAIT
-            </h1>
-            <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 8, color: colors.text }}>GAME OVER</div>
-            <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 20, color: colors.text }}>
+            <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
+              GAME OVER
+            </div>
+            <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 16, color: colors.text }}>
               BARRELS GOBBLED: {score}
             </div>
-            <button
-              style={bigBtnStyle}
-              onClick={startGame}
-              onTouchEnd={(e) => { e.preventDefault(); startGame(); }}
-            >
-              PLAY AGAIN
-            </button>
+
+            {needsName ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ fontSize: 'clamp(12px, 3.5vw, 16px)', color: colors.gold }}>
+                  NEW TOP SCORE!
+                </div>
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  maxLength={12}
+                  placeholder="Enter name"
+                  value={nameEntry}
+                  onChange={(e) => setNameEntry(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submitName(); }}
+                  style={{
+                    background: 'transparent', border: `2px solid ${colors.gold}`,
+                    color: colors.text, padding: '8px 12px', fontSize: 18,
+                    fontFamily: "'Courier New', monospace", textAlign: 'center',
+                    borderRadius: 4, outline: 'none', width: 200,
+                  }}
+                />
+                <button style={{ ...bigBtnStyle, padding: '10px 28px', fontSize: 18 }} onClick={submitName}>
+                  SAVE
+                </button>
+              </div>
+            ) : (
+              <>
+                <button style={bigBtnStyle} onClick={handleStart}
+                  onTouchEnd={(e) => { e.preventDefault(); handleStart(); }}>
+                  PLAY AGAIN
+                </button>
+                <Leaderboard board={leaderboard} colors={colors} highlight={highlightIdx} />
+              </>
+            )}
           </Overlay>
         )}
       </div>
