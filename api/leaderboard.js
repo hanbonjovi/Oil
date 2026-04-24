@@ -3,17 +3,9 @@ import { createClient } from 'redis';
 const KEY = 'leaderboard';
 const MAX = 10;
 
-let client;
-
 async function getClient() {
-  if (!client) {
-    client = createClient({ url: process.env.REDIS_URL });
-    client.on('error', () => {});
-    await client.connect();
-  }
-  if (!client.isOpen) {
-    await client.connect();
-  }
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
   return client;
 }
 
@@ -24,8 +16,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  let redis;
   try {
-    const redis = await getClient();
+    redis = await getClient();
 
     if (req.method === 'GET') {
       const raw = await redis.get(KEY);
@@ -53,5 +46,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     return res.status(500).json({ error: 'Server error', detail: err.message });
+  } finally {
+    if (redis) {
+      await redis.quit().catch(() => {});
+    }
   }
 }
