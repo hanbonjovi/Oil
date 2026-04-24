@@ -209,9 +209,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    document.body.style.background = colors.bg;
-    document.documentElement.style.background = colors.bg;
-  }, [colors.bg]);
+    document.body.style.background = colors.border;
+    document.documentElement.style.background = colors.border;
+  }, [colors.border]);
 
   const bigBtnStyle = {
     padding: '14px 36px', fontSize: 22, fontWeight: 'bold',
@@ -248,7 +248,7 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      height: '100dvh', background: colors.bg, overflow: 'hidden',
+      height: '100dvh', background: colors.border, overflow: 'hidden',
     }}>
       <div style={{ width: '100%', maxWidth: 600, flexShrink: 0 }}>
         <div style={{
