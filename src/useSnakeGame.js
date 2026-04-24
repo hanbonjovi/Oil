@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { GRID_COLS, GRID_ROWS, DIRECTIONS, HIGH_SCORE_KEY } from './constants';
 
-const START_TICK = 180;
+const START_TICK = 216;
 const MIN_TICK = 80;
 const SPEED_STEP = 5;
 

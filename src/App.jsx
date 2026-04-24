@@ -4,26 +4,51 @@ import useInputControls from './useInputControls';
 import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
+const LEADERS_KEY = 'strait-leaderboard';
 const MAX_LEADERS = 10;
+
+function getLocalBoard() {
+  try {
+    return JSON.parse(localStorage.getItem(LEADERS_KEY)) || [];
+  } catch { return []; }
+}
+
+function saveLocalBoard(board) {
+  try { localStorage.setItem(LEADERS_KEY, JSON.stringify(board)); } catch {}
+}
 
 async function fetchLeaderboard() {
   try {
     const res = await fetch('/api/leaderboard');
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const board = await res.json();
+      saveLocalBoard(board);
+      return board;
+    }
   } catch {}
-  return [];
+  return getLocalBoard();
 }
 
 async function postScore(name, score) {
+  const entry = { name: name.slice(0, 12), score, date: new Date().toISOString().slice(0, 10) };
   try {
     const res = await fetch('/api/leaderboard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.slice(0, 12), score }),
+      body: JSON.stringify({ name: entry.name, score }),
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const board = await res.json();
+      saveLocalBoard(board);
+      return board;
+    }
   } catch {}
-  return null;
+  const local = getLocalBoard();
+  local.push(entry);
+  local.sort((a, b) => b.score - a.score);
+  const trimmed = local.slice(0, MAX_LEADERS);
+  saveLocalBoard(trimmed);
+  return trimmed;
 }
 
 function isTopScore(score, board) {
@@ -244,7 +269,7 @@ export default function App() {
           <span>BEST: {highScore}</span>
         </div>
 
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `1px solid ${colors.border}` }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
