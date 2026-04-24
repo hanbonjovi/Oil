@@ -250,26 +250,28 @@ export default function App() {
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       height: '100%', background: colors.border,
     }}>
-      <div ref={gameContainerRef} style={{
-        position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
-      }}>
+      <div style={{ width: '100%', maxWidth: 600 }}>
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 5,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '6px 10px', fontSize: 'clamp(11px, 3vw, 15px)',
-          color: colors.gold, fontWeight: 'bold', pointerEvents: 'none',
+          padding: '8px 14px', fontSize: 'clamp(12px, 3.5vw, 16px)',
+          color: colors.gold, fontWeight: 'bold',
+          background: colors.border,
+          borderLeft: `12px solid ${colors.border}`, borderRight: `12px solid ${colors.border}`,
         }}>
           <span>BARRELS: {score}</span>
           <button onClick={toggleTheme} style={{
-            background: 'transparent', border: 'none', fontSize: 18,
-            cursor: 'pointer', padding: 0, pointerEvents: 'auto',
+            background: 'transparent', border: 'none', fontSize: 20,
+            cursor: 'pointer', padding: 0,
           }}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <span>BEST: {highScore}</span>
         </div>
-
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', border: `12px solid ${colors.border}` }}>
+      </div>
+      <div ref={gameContainerRef} style={{
+        position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
+      }}>
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', borderLeft: `12px solid ${colors.border}`, borderRight: `12px solid ${colors.border}`, borderBottom: `12px solid ${colors.border}` }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
