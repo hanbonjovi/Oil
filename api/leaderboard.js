@@ -1,7 +1,14 @@
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
 
 const KEY = 'leaderboard';
 const MAX = 10;
+
+function getClient() {
+  const url = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN;
+  if (!url || !token) throw new Error('Missing KV env vars');
+  return createClient({ url, token });
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +18,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    const kv = getClient();
+
     if (req.method === 'GET') {
       const board = (await kv.get(KEY)) || [];
       return res.status(200).json(board);
@@ -34,6 +43,6 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 }
