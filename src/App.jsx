@@ -248,9 +248,9 @@ export default function App() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      height: '100%', background: colors.bg,
+      height: '100dvh', background: colors.bg, overflow: 'hidden',
     }}>
-      <div style={{ width: '100%', maxWidth: 600 }}>
+      <div style={{ width: '100%', maxWidth: 600, flexShrink: 0 }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '10px 14px', fontSize: 'clamp(14px, 4vw, 18px)',
@@ -270,8 +270,9 @@ export default function App() {
       </div>
       <div ref={gameContainerRef} style={{
         position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
+        flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
       }}>
-        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', height: 'auto', display: 'block', borderLeft: `12px solid ${colors.border}`, borderRight: `12px solid ${colors.border}`, borderBottom: `12px solid ${colors.border}` }}>
+        <svg viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} style={{ width: '100%', flex: 1, minHeight: 0, display: 'block', border: `12px solid ${colors.border}`, boxSizing: 'border-box' }}>
           <rect width={BOARD_W} height={BOARD_H} fill={colors.board} />
           {gridLines}
           <OilDrop x={food.x} y={food.y} colors={colors} />
