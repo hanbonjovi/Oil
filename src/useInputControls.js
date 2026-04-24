@@ -4,6 +4,9 @@ import { SWIPE_THRESHOLD } from './constants';
 export default function useInputControls(changeDirection, gameContainerRef) {
   useEffect(() => {
     const handler = (e) => {
+      // Don't intercept when typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
       const map = {
         ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
         w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
@@ -26,6 +29,8 @@ export default function useInputControls(changeDirection, gameContainerRef) {
     let touchStartY = 0;
 
     const onTouchStart = (e) => {
+      // Don't block touch on inputs, buttons, or overlays with interactive elements
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
       e.preventDefault();
       const touch = e.touches[0];
       touchStartX = touch.clientX;
@@ -33,10 +38,12 @@ export default function useInputControls(changeDirection, gameContainerRef) {
     };
 
     const onTouchMove = (e) => {
+      if (e.target.tagName === 'INPUT') return;
       e.preventDefault();
     };
 
     const onTouchEnd = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
       e.preventDefault();
       const touch = e.changedTouches[0];
       const dx = touch.clientX - touchStartX;
