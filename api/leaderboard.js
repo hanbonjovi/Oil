@@ -11,7 +11,7 @@ async function getClient() {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -41,6 +41,17 @@ export default async function handler(req, res) {
       await redis.set(KEY, JSON.stringify(trimmed));
 
       return res.status(200).json(trimmed);
+    }
+
+    if (req.method === 'DELETE') {
+      const { name, score } = req.body || {};
+      const raw = await redis.get(KEY);
+      const board = raw ? JSON.parse(raw) : [];
+      const idx = board.findIndex((e) => e.name === name && e.score === score);
+      if (idx === -1) return res.status(404).json({ error: 'Entry not found' });
+      board.splice(idx, 1);
+      await redis.set(KEY, JSON.stringify(board));
+      return res.status(200).json(board);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
