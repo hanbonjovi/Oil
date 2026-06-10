@@ -57,14 +57,25 @@ function isTopScore(score, board) {
   return score > board[board.length - 1].score;
 }
 
+function parseHex(hex) {
+  const c = hex.replace('#', '');
+  return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
+}
+
+function lerpRgb(a, b, t) {
+  return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t));
+}
+
 function lerpColor(a, b, t) {
-  const parse = (hex) => {
-    const c = hex.replace('#', '');
-    return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
-  };
-  const [r1, g1, b1] = parse(a);
-  const [r2, g2, b2] = parse(b);
-  return `rgb(${Math.round(r1 + (r2 - r1) * t)},${Math.round(g1 + (g2 - g1) * t)},${Math.round(b1 + (b2 - b1) * t)})`;
+  const [r, g, bl] = lerpRgb(parseHex(a), parseHex(b), t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function shade(hexA, hexB, t, towardBlack) {
+  const mixed = lerpRgb(parseHex(hexA), parseHex(hexB), t);
+  const target = towardBlack ? [0, 0, 0] : [255, 255, 255];
+  const [r, g, b] = lerpRgb(mixed, target, 0.35);
+  return `rgb(${r},${g},${b})`;
 }
 
 function SnakeHead({ x, y, colors }) {
@@ -78,9 +89,10 @@ function SnakeHead({ x, y, colors }) {
           <circle cx={cx} cy={cy} r={r} />
         </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={r + 1} fill="none" stroke={colors.gold} strokeWidth={2} />
+      <circle cx={cx} cy={cy} r={r + 1} fill="#0006" transform="translate(2,3)" />
       <image href="/trump-head.png" x={cx - r} y={cy - r} width={r * 2} height={r * 2}
         clipPath="url(#head-clip)" preserveAspectRatio="xMidYMid slice" />
+      <circle cx={cx} cy={cy} r={r + 1} fill="none" stroke="url(#gold-ring)" strokeWidth={3} />
     </g>
   );
 }
@@ -92,8 +104,15 @@ function BodySegment({ seg, index, total, colors }) {
   const size = CELL_SIZE * taper;
   const t = index / Math.max(total - 1, 1);
   const color = lerpColor(colors.bodyStart, colors.bodyEnd, t);
+  const edge = shade(colors.bodyStart, colors.bodyEnd, t, true);
   return (
-    <rect x={cx - size / 2} y={cy - size / 2} width={size} height={size} rx={size * 0.25} fill={color} />
+    <g>
+      <rect x={cx - size / 2 + 2} y={cy - size / 2 + 3} width={size} height={size} rx={size * 0.3} fill="#0005" />
+      <rect x={cx - size / 2} y={cy - size / 2} width={size} height={size} rx={size * 0.3}
+        fill={color} stroke={edge} strokeWidth={1.5} strokeOpacity={0.4} />
+      <ellipse cx={cx - size * 0.18} cy={cy - size * 0.22} rx={size * 0.28} ry={size * 0.16}
+        fill="#ffffff" opacity={0.18} />
+    </g>
   );
 }
 
@@ -102,10 +121,15 @@ function OilDrop({ x, y, colors }) {
   const cy = y * CELL_SIZE + CELL_SIZE / 2;
   return (
     <g transform={`translate(${cx}, ${cy}) scale(2.5)`}>
-      <path d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
-        fill={colors.oilFill} stroke={colors.oilStroke} strokeWidth={1} />
-      <ellipse cx={-1.5} cy={0} rx={1.2} ry={2.5} fill={colors.oilHighlight} opacity={0.4} />
-      <ellipse cx={1} cy={-2} rx={0.8} ry={1.2} fill={colors.oilHighlight} opacity={0.25} />
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          values="0 0; 0 -1.5; 0 0" dur="1.6s" repeatCount="indefinite" />
+        <ellipse cx={0} cy={7.5} rx={5} ry={1.4} fill="#000" opacity={0.25} />
+        <path d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
+          fill="url(#oil-grad)" stroke={colors.oilStroke} strokeWidth={0.8} />
+        <ellipse cx={-1.8} cy={1} rx={1.3} ry={2.4} fill="#ffffff" opacity={0.35} transform="rotate(-15 -1.8 1)" />
+        <circle cx={1.6} cy={-2.5} r={0.7} fill="#ffffff" opacity={0.3} />
+      </g>
     </g>
   );
 }
@@ -224,11 +248,11 @@ export default function App() {
     const lines = [];
     for (let i = 0; i <= GRID_COLS; i++) {
       const pos = i * CELL_SIZE;
-      lines.push(<line key={`v${i}`} x1={pos} y1={0} x2={pos} y2={BOARD_H} stroke={colors.gridLine} strokeWidth={0.5} />);
+      lines.push(<line key={`v${i}`} x1={pos} y1={0} x2={pos} y2={BOARD_H} stroke={colors.gridLine} strokeWidth={0.5} strokeOpacity={0.6} />);
     }
     for (let i = 0; i <= GRID_ROWS; i++) {
       const pos = i * CELL_SIZE;
-      lines.push(<line key={`h${i}`} x1={0} y1={pos} x2={BOARD_W} y2={pos} stroke={colors.gridLine} strokeWidth={0.5} />);
+      lines.push(<line key={`h${i}`} x1={0} y1={pos} x2={BOARD_W} y2={pos} stroke={colors.gridLine} strokeWidth={0.5} strokeOpacity={0.6} />);
     }
     return lines;
   }, [colors.gridLine]);
@@ -254,8 +278,9 @@ export default function App() {
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '10px 14px', fontSize: 'clamp(14px, 4vw, 18px)',
-          color: '#3a2200', fontWeight: 'bold',
-          background: colors.border,
+          color: '#3a2200', fontWeight: 'bold', letterSpacing: 1,
+          background: `linear-gradient(${lerpColor(colors.border, '#ffffff', 0.15)}, ${colors.border})`,
+          textShadow: '0 1px 0 rgba(255,255,255,0.3)',
         }}>
           <span>BARRELS: {score}</span>
           <button onClick={toggleTheme} style={{
@@ -272,8 +297,55 @@ export default function App() {
         flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
       }}>
         <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', flex: 1, minHeight: 0, display: 'block' }}>
-          <rect width={SVG_W} height={SVG_H} fill={colors.border} />
-          <rect x={BORDER} y={BORDER} width={BOARD_W} height={BOARD_H} fill={colors.board} />
+          <defs>
+            <linearGradient id="water-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={lerpColor(colors.board, '#ffffff', 0.10)} />
+              <stop offset="55%" stopColor={colors.board} />
+              <stop offset="100%" stopColor={lerpColor(colors.board, '#000000', 0.18)} />
+            </linearGradient>
+            <linearGradient id="sand-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={lerpColor(colors.border, '#ffffff', 0.15)} />
+              <stop offset="100%" stopColor={lerpColor(colors.border, '#000000', 0.18)} />
+            </linearGradient>
+            <linearGradient id="gold-ring" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#fff3b0" />
+              <stop offset="45%" stopColor={colors.gold} />
+              <stop offset="100%" stopColor="#9a7b1c" />
+            </linearGradient>
+            <radialGradient id="oil-grad" cx="35%" cy="30%" r="80%">
+              <stop offset="0%" stopColor="#4a4a4a" />
+              <stop offset="45%" stopColor="#151515" />
+              <stop offset="100%" stopColor="#000000" />
+            </radialGradient>
+            <pattern id="waves" width="120" height="70" patternUnits="userSpaceOnUse">
+              <path d="M0 20 Q 15 12, 30 20 T 60 20 T 90 20 T 120 20" fill="none"
+                stroke="#ffffff" strokeOpacity="0.08" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M-15 55 Q 0 47, 15 55 T 45 55 T 75 55 T 105 55 T 135 55" fill="none"
+                stroke="#ffffff" strokeOpacity="0.05" strokeWidth="2.5" strokeLinecap="round" />
+            </pattern>
+            <pattern id="sand-speckles" width="36" height="36" patternUnits="userSpaceOnUse">
+              <circle cx="6" cy="8" r="1.3" fill="#000" opacity="0.10" />
+              <circle cx="22" cy="4" r="1" fill="#000" opacity="0.08" />
+              <circle cx="30" cy="20" r="1.4" fill="#fff" opacity="0.12" />
+              <circle cx="12" cy="26" r="1.1" fill="#000" opacity="0.09" />
+              <circle cx="26" cy="32" r="1" fill="#fff" opacity="0.10" />
+            </pattern>
+          </defs>
+
+          {/* land border */}
+          <rect width={SVG_W} height={SVG_H} fill="url(#sand-grad)" />
+          <rect width={SVG_W} height={SVG_H} fill="url(#sand-speckles)" />
+
+          {/* ocean */}
+          <rect x={BORDER} y={BORDER} width={BOARD_W} height={BOARD_H} fill="url(#water-grad)" />
+          <rect x={BORDER} y={BORDER} width={BOARD_W} height={BOARD_H} fill="url(#waves)" />
+
+          {/* coastline: dark wet-sand edge + foam line */}
+          <rect x={BORDER - 2} y={BORDER - 2} width={BOARD_W + 4} height={BOARD_H + 4} fill="none"
+            stroke={lerpColor(colors.border, '#000000', 0.35)} strokeWidth={4} rx={3} />
+          <rect x={BORDER + 2} y={BORDER + 2} width={BOARD_W - 4} height={BOARD_H - 4} fill="none"
+            stroke="#ffffff" strokeOpacity={0.25} strokeWidth={2} rx={2} />
+
           <g transform={`translate(${BORDER},${BORDER})`}>
             {gridLines}
             <OilDrop x={food.x} y={food.y} colors={colors} />
