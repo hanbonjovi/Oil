@@ -1,11 +1,25 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import useSnakeGame from './useSnakeGame';
 import useInputControls from './useInputControls';
+import { unlockAudio, playGulp, playGold, playCrash } from './sounds';
 import { GRID_COLS, GRID_ROWS, CELL_SIZE, BOARD_W, BOARD_H, BORDER, SVG_W, SVG_H, THEMES } from './constants';
 
 const THEME_KEY = 'strait-theme';
 const LEADERS_KEY = 'strait-leaderboard';
+const MUTED_KEY = 'strait-muted';
 const MAX_LEADERS = 10;
+const SHARE_URL = 'https://snakeoil.vercel.app';
+
+const QUOTES = [
+  'WORST CRASH IN THE HISTORY OF CRASHES!',
+  'The strait stays CLOSED. Sad!',
+  'That was a PERFECT swim. The water rigged it!',
+  'Nobody gobbles barrels better than me. NOBODY!',
+  'We had the BEST oil. Tremendous oil.',
+  'FAKE WAVES stopped a beautiful run!',
+  'I know straits. This one is a DISASTER.',
+  'Many people are saying it was the tanker’s fault.',
+];
 
 function getLocalBoard() {
   try {
@@ -116,20 +130,57 @@ function BodySegment({ seg, index, total, colors }) {
   );
 }
 
-function OilDrop({ x, y, colors }) {
+function OilDrop({ x, y, gold, colors }) {
   const cx = x * CELL_SIZE + CELL_SIZE / 2;
   const cy = y * CELL_SIZE + CELL_SIZE / 2;
   return (
     <g transform={`translate(${cx}, ${cy}) scale(2.5)`}>
       <g>
         <animateTransform attributeName="transform" type="translate"
-          values="0 0; 0 -1.5; 0 0" dur="1.6s" repeatCount="indefinite" />
+          values="0 0; 0 -1.5; 0 0" dur={gold ? '0.8s' : '1.6s'} repeatCount="indefinite" />
+        {gold && (
+          <circle r={9} fill="#ffd700" opacity={0.25}>
+            <animate attributeName="r" values="7;11;7" dur="0.9s" repeatCount="indefinite" />
+          </circle>
+        )}
         <ellipse cx={0} cy={7.5} rx={5} ry={1.4} fill="#000" opacity={0.25} />
         <path d="M0,-8 C-1,-6 -5,0 -5,3 A5,5 0 0,0 5,3 C5,0 1,-6 0,-8Z"
-          fill="url(#oil-grad)" stroke={colors.oilStroke} strokeWidth={0.8} />
+          fill={gold ? 'url(#gold-drop-grad)' : 'url(#oil-grad)'}
+          stroke={gold ? '#fff3c4' : colors.oilStroke} strokeWidth={0.8} />
         <ellipse cx={-1.8} cy={1} rx={1.3} ry={2.4} fill="#ffffff" opacity={0.35} transform="rotate(-15 -1.8 1)" />
         <circle cx={1.6} cy={-2.5} r={0.7} fill="#ffffff" opacity={0.3} />
       </g>
+    </g>
+  );
+}
+
+function Tanker({ tanker }) {
+  const { cells, horizontal } = tanker;
+  const x0 = Math.min(...cells.map((c) => c.x)) * CELL_SIZE;
+  const y0 = Math.min(...cells.map((c) => c.y)) * CELL_SIZE;
+  const w = (horizontal ? cells.length : 1) * CELL_SIZE;
+  const h = (horizontal ? 1 : cells.length) * CELL_SIZE;
+  const pad = 5;
+  const hullW = w - pad * 2;
+  const hullH = h - pad * 2;
+  const r = Math.min(hullW, hullH) * 0.35;
+  const bw = horizontal ? hullW * 0.16 : hullW * 0.6;
+  const bh = horizontal ? hullH * 0.6 : hullH * 0.16;
+  const bx = horizontal ? x0 + pad + hullW * 0.06 : x0 + pad + (hullW - bw) / 2;
+  const by = horizontal ? y0 + pad + (hullH - bh) / 2 : y0 + pad + hullH * 0.06;
+  const hatches = [];
+  for (let i = 1; i < cells.length; i++) {
+    const hx = horizontal ? x0 + (i + 0.55) * CELL_SIZE : x0 + CELL_SIZE / 2;
+    const hy = horizontal ? y0 + CELL_SIZE / 2 : y0 + (i + 0.55) * CELL_SIZE;
+    hatches.push(<circle key={i} cx={hx} cy={hy} r={5} fill="#5a2020" stroke="#3a1212" strokeWidth={1.5} />);
+  }
+  return (
+    <g>
+      <rect x={x0 + pad + 2} y={y0 + pad + 3} width={hullW} height={hullH} rx={r} fill="#0005" />
+      <rect x={x0 + pad} y={y0 + pad} width={hullW} height={hullH} rx={r}
+        fill="#8a3030" stroke="#4a1818" strokeWidth={2.5} />
+      <rect x={bx} y={by} width={bw} height={bh} rx={3} fill="#e8e0d0" stroke="#4a1818" strokeWidth={1.5} />
+      {hatches}
     </g>
   );
 }
@@ -175,7 +226,31 @@ function Leaderboard({ board, colors, highlight }) {
 }
 
 export default function App() {
-  const { snake, food, score, highScore, gameState, startGame, changeDirection } = useSnakeGame();
+  const [muted, setMuted] = useState(() => {
+    try { return localStorage.getItem(MUTED_KEY) === '1'; } catch { return false; }
+  });
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const [popups, setPopups] = useState([]);
+  const [shake, setShake] = useState(false);
+  const [quote, setQuote] = useState('');
+  const popupIdRef = useRef(0);
+
+  const handleGameEvent = useCallback((ev) => {
+    if (ev.type === 'eat') {
+      if (!mutedRef.current) (ev.gold ? playGold : playGulp)();
+      const id = ++popupIdRef.current;
+      setPopups((p) => [...p, { id, x: ev.x, y: ev.y, points: ev.points, gold: ev.gold }]);
+      setTimeout(() => setPopups((p) => p.filter((q) => q.id !== id)), 800);
+    } else if (ev.type === 'gameover') {
+      if (!mutedRef.current) playCrash();
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    }
+  }, []);
+
+  const { snake, food, tankers, score, highScore, gameState, startGame, resumeGame, changeDirection } = useSnakeGame(handleGameEvent);
   const gameContainerRef = useRef(null);
   const nameInputRef = useRef(null);
   useInputControls(changeDirection, gameContainerRef);
@@ -232,6 +307,24 @@ export default function App() {
     try { localStorage.setItem(THEME_KEY, next); } catch {}
   };
 
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    try { localStorage.setItem(MUTED_KEY, next ? '1' : '0'); } catch {}
+  };
+
+  const shareScore = async () => {
+    const text = `I gobbled ${score} barrels 🛢️ in OPEN THE FUCKIN' STRAIT — can you beat me?`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text, url: SHARE_URL });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${SHARE_URL}`);
+        alert('Copied to clipboard!');
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     document.body.style.background = colors.border;
     document.documentElement.style.background = colors.border;
@@ -265,6 +358,7 @@ export default function App() {
   }
 
   const handleStart = () => {
+    unlockAudio();
     setHighlightIdx(null);
     startGame();
   };
@@ -283,18 +377,27 @@ export default function App() {
           textShadow: '0 1px 0 rgba(255,255,255,0.3)',
         }}>
           <span>BARRELS: {score}</span>
-          <button onClick={toggleTheme} style={{
-            background: 'transparent', border: 'none', fontSize: 20,
-            cursor: 'pointer', padding: 0,
-          }}>
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          <span style={{ display: 'flex', gap: 16 }}>
+            <button onClick={toggleTheme} style={{
+              background: 'transparent', border: 'none', fontSize: 20,
+              cursor: 'pointer', padding: 0,
+            }}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <button onClick={toggleMute} style={{
+              background: 'transparent', border: 'none', fontSize: 20,
+              cursor: 'pointer', padding: 0,
+            }}>
+              {muted ? '🔇' : '🔊'}
+            </button>
+          </span>
           <span>BEST: {highScore}</span>
         </div>
       </div>
       <div ref={gameContainerRef} style={{
         position: 'relative', width: '100%', maxWidth: 600, touchAction: 'none',
         flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+        animation: shake ? 'shake 0.45s' : 'none',
       }}>
         <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', flex: 1, minHeight: 0, display: 'block' }}>
           <defs>
@@ -316,6 +419,11 @@ export default function App() {
               <stop offset="0%" stopColor="#4a4a4a" />
               <stop offset="45%" stopColor="#151515" />
               <stop offset="100%" stopColor="#000000" />
+            </radialGradient>
+            <radialGradient id="gold-drop-grad" cx="35%" cy="30%" r="80%">
+              <stop offset="0%" stopColor="#fff3c4" />
+              <stop offset="45%" stopColor="#e8b923" />
+              <stop offset="100%" stopColor="#8a6a10" />
             </radialGradient>
             <pattern id="waves" width="120" height="70" patternUnits="userSpaceOnUse">
               <path d="M0 20 Q 15 12, 30 20 T 60 20 T 90 20 T 120 20" fill="none"
@@ -348,9 +456,21 @@ export default function App() {
 
           <g transform={`translate(${BORDER},${BORDER})`}>
             {gridLines}
-            <OilDrop x={food.x} y={food.y} colors={colors} />
+            {tankers.map((t, i) => <Tanker key={i} tanker={t} />)}
+            <OilDrop x={food.x} y={food.y} gold={food.gold} colors={colors} />
             {bodySegments}
             {snake.length > 0 && <SnakeHead x={snake[0].x} y={snake[0].y} colors={colors} />}
+            {popups.map((p) => (
+              <text key={p.id}
+                x={p.x * CELL_SIZE + CELL_SIZE / 2}
+                y={p.y * CELL_SIZE + CELL_SIZE / 2 - 10}
+                textAnchor="middle" fontSize={28} fontWeight="bold"
+                fill={p.gold ? '#ffd700' : '#ffffff'} stroke="#00000088" strokeWidth={0.8}
+                fontFamily="'Courier New', monospace"
+                style={{ animation: 'floatUp 0.8s ease-out forwards' }}>
+                +{p.points}
+              </text>
+            ))}
           </g>
         </svg>
 
@@ -374,6 +494,18 @@ export default function App() {
           </Overlay>
         )}
 
+        {gameState === 'paused' && (
+          <Overlay colors={colors}>
+            <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 16, color: colors.gold, fontWeight: 'bold' }}>
+              PAUSED
+            </div>
+            <button style={bigBtnStyle} onClick={resumeGame}
+              onTouchEnd={(e) => { e.preventDefault(); resumeGame(); }}>
+              RESUME
+            </button>
+          </Overlay>
+        )}
+
         {gameState === 'gameover' && (
           <Overlay colors={colors}>
             {needsName ? (
@@ -381,8 +513,14 @@ export default function App() {
                 <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
                   GAME OVER
                 </div>
-                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 12, color: colors.text }}>
+                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 8, color: colors.text }}>
                   BARRELS GOBBLED: {score}
+                </div>
+                <div style={{
+                  fontSize: 'clamp(11px, 3.2vw, 15px)', color: colors.text, opacity: 0.8,
+                  fontStyle: 'italic', textAlign: 'center', maxWidth: 320, margin: '0 20px 12px',
+                }}>
+                  “{quote}”
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                   <div style={{ fontSize: 'clamp(12px, 3.5vw, 16px)', color: colors.gold }}>
@@ -413,14 +551,26 @@ export default function App() {
                 <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', marginBottom: 6, color: colors.gold, fontWeight: 'bold' }}>
                   GAME OVER
                 </div>
-                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 12, color: colors.text }}>
+                <div style={{ fontSize: 'clamp(14px, 4vw, 20px)', marginBottom: 8, color: colors.text }}>
                   BARRELS GOBBLED: {score}
                 </div>
+                <div style={{
+                  fontSize: 'clamp(11px, 3.2vw, 15px)', color: colors.text, opacity: 0.8,
+                  fontStyle: 'italic', textAlign: 'center', maxWidth: 320, margin: '0 20px',
+                }}>
+                  “{quote}”
+                </div>
                 <Leaderboard board={leaderboard} colors={colors} highlight={highlightIdx} />
-                <button style={{ ...bigBtnStyle, marginTop: 16 }} onClick={handleStart}
-                  onTouchEnd={(e) => { e.preventDefault(); handleStart(); }}>
-                  PLAY AGAIN
-                </button>
+                <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                  <button style={{ ...bigBtnStyle, padding: '12px 24px', fontSize: 18 }} onClick={handleStart}
+                    onTouchEnd={(e) => { e.preventDefault(); handleStart(); }}>
+                    PLAY AGAIN
+                  </button>
+                  <button style={{ ...bigBtnStyle, padding: '12px 24px', fontSize: 18 }} onClick={shareScore}
+                    onTouchEnd={(e) => { e.preventDefault(); shareScore(); }}>
+                    SHARE 📤
+                  </button>
+                </div>
               </>
             )}
           </Overlay>
